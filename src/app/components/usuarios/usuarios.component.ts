@@ -34,53 +34,7 @@ export class UsuariosComponent implements OnDestroy, OnInit {
   ngOnInit(): void {
 
     this.crearFormulario();
-
-    const self = this;
-
-    this.dtOptions = {
-      pagingType: 'full_numbers',
-      pageLength: 5,
-      // destroy: true,
-      // Declare the use of the extension in the dom parameter
-      dom: 'Bfrtip',
-      language: {
-        url: '//cdn.datatables.net/plug-ins/1.10.22/i18n/Spanish.json'
-      },
-      columns: [
-        { title: 'ID', data: 'id' },
-        { title: 'Nombre', data: 'nombre' },
-        { title: 'Correo', data: 'email' },
-      ],
-      rowCallback: (row: Node, data: any[] | Object, index: number) => {
-        // const self = this;
-        // Unbind first in order to avoid any duplicate handler
-        // (see https://github.com/l-lin/angular-datatables/issues/87)
-        // Note: In newer jQuery v3 versions, `unbind` and `bind` are 
-        // deprecated in favor of `off` and `on`
-        $('td', row).off('click');
-        $('td', row).on('click', () => {
-          self.obtenerUsuario(data);
-        });
-        return row;
-      },
-      // Configure the buttons
-      buttons: [
-        { extend: 'excel' },
-        { extend: 'columnsToggle' },
-        { extend: 'colvis' },
-        { extend: 'copy' },
-        { extend: 'print' },
-        {
-          text: 'Registro',
-          key: '1',
-          action: function (e, dt, node, config) {
-            self.showModal()
-          }
-        }
-      ]
-    };
-    
-    this.obtenerUsuarios();
+    this.crearDataTable();
 
   }
 
@@ -123,8 +77,54 @@ export class UsuariosComponent implements OnDestroy, OnInit {
   obtenerUsuarios() {
     this.usuariosService.obtenerUsuarios().subscribe( (resp: any) => {
       this.data = resp.usuarios;
-      this.dtTrigger.next();
+      this.dtTrigger.next();    
     });
+  }
+
+  eliminarUsuario(data: any) {
+    
+    Swal.fire({
+      title: 'Estas seguro de eliminar?',
+      text: `Eliminaras el registro ${data.nombre}`,
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#3085d6',
+      cancelButtonColor: '#d33',
+      confirmButtonText: 'Eliminar',
+      cancelButtonText: 'Cancelar',
+    }).then((result) => {
+
+      if (result.isConfirmed) {
+
+        this.usuariosService.eliminarUsuario(data.id).subscribe( (resp: any) => {
+          
+          if (resp.ok) {
+
+            Swal.fire(
+              'Eliminado',
+              `El registro ${data.nombre} fue eliminado`,
+              'success'
+            );
+
+            this.obtenerUsuarios();
+            
+          } else {
+
+            Swal.fire(
+              'Error',
+              `Ha ocurrido un error en el servidor`,
+              'error'
+            );
+            
+          }
+
+        });
+
+
+      }
+
+    })
+
   }
 
   guardarUsuario() {
@@ -147,7 +147,7 @@ export class UsuariosComponent implements OnDestroy, OnInit {
         if (result.isConfirmed) {
           $('#mdlUsuarios').modal('hide');
           this.forma.reset();
-          // this.obtenerUsuarios();
+          this.obtenerUsuarios();
         }
 
       });
@@ -165,6 +165,73 @@ export class UsuariosComponent implements OnDestroy, OnInit {
       nombre: ['', [Validators.required, Validators.maxLength(100)]],
       email: ['', [Validators.required, Validators.email, Validators.maxLength(100)]],
     });
+
+  }
+
+  crearDataTable() {
+
+    const self = this;
+
+    this.dtOptions = {
+      pagingType: 'full_numbers',
+      pageLength: 5,
+      destroy: true,
+      // Declare the use of the extension in the dom parameter
+      dom: 'Bfrtip',
+      language: {
+        url: '//cdn.datatables.net/plug-ins/1.10.22/i18n/Spanish.json'
+      },
+      columns: [
+        { title: 'ID', data: 'id' },
+        { title: 'Nombre', data: 'nombre' },
+        { title: 'Correo', data: 'email' },
+        { title: 'Opciones', defaultContent: '' },
+      ],
+      columnDefs: [{
+        targets: 3,
+        render: function(data, type, row, meta) {
+          return `<button type="button" class="btn btn-info btn-sm editar">Editar</button>
+          <button type="button" class="btn btn-danger btn-sm eliminar">Eliminar</button>`;
+        }
+      }],
+      rowCallback: (row: Node, data: any[] | Object, index: number) => {
+        // const self = this;
+        // Unbind first in order to avoid any duplicate handler
+        // (see https://github.com/l-lin/angular-datatables/issues/87)
+        // Note: In newer jQuery v3 versions, `unbind` and `bind` are 
+        // deprecated in favor of `off` and `on`
+        
+        $('td', row).off('click');
+
+        $('td .editar', row).on('click', () => {
+          self.obtenerUsuario(data);
+        });
+
+        $('td .eliminar', row).on('click', () => {
+          self.eliminarUsuario(data);
+        });
+
+        return row;
+
+      },
+      // Configure the buttons
+      buttons: [
+        { extend: 'excel' },
+        { extend: 'columnsToggle' },
+        { extend: 'colvis' },
+        { extend: 'copy' },
+        { extend: 'print' },
+        {
+          text: 'Registro',
+          key: '1',
+          action: function (e, dt, node, config) {
+            self.showModal()
+          }
+        }
+      ]
+    };
+
+    this.obtenerUsuarios();
 
   }
 

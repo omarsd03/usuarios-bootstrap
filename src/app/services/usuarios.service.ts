@@ -21,4 +21,8 @@ export class UsuariosService {
     return (jsonData.id === "" || jsonData.id === null || jsonData.id === undefined) ? this.http.post(`${this.base_url}`, jsonData) : this.http.put(`${this.base_url}/${jsonData.id}`, jsonData);
   }
 
+  eliminarUsuario(id: any) {
+    return this.http.delete(`${this.base_url}/${id}`);
+  }
+
 }
